@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="45" fill="#915EFF" stroke="#7C3AED" stroke-width="2"/>
+  
+  <!-- Letter B -->
+  <path d="M25 20 L25 80 L45 80 Q60 80 60 65 Q60 55 50 55 Q60 55 60 45 Q60 30 45 30 L25 30 Z" fill="white"/>
+  <path d="M35 35 L40 35 Q45 35 45 40 Q45 45 40 45 L35 45 Z" fill="#915EFF"/>
+  <path d="M35 55 L40 55 Q45 55 45 60 Q45 65 40 65 L35 65 Z" fill="#915EFF"/>
+</svg>
