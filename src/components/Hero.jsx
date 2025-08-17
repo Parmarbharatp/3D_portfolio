@@ -7,11 +7,31 @@ import { ComputersCanvas } from "./canvas";
 const Hero = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [modelFailed, setModelFailed] = useState(false);
+  const [webglSupported, setWebglSupported] = useState(true);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(max-width: 500px)");
-    setIsMobile(mediaQuery.matches);
+    // Enhanced mobile detection
+    const checkMobile = () => {
+      const mediaQuery = window.matchMedia("(max-width: 500px)");
+      const userAgent = navigator.userAgent.toLowerCase();
+      
+      // Check for mobile user agents
+      const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      const isMobileScreen = mediaQuery.matches;
+      
+      setIsMobile(isMobileUA || isMobileScreen);
+      
+      console.log('Mobile detection:', {
+        userAgent: userAgent,
+        isMobileUA,
+        isMobileScreen,
+        finalResult: isMobileUA || isMobileScreen
+      });
+    };
 
+    checkMobile();
+
+    const mediaQuery = window.matchMedia("(max-width: 500px)");
     const handleMediaQueryChange = (event) => {
       setIsMobile(event.matches);
     };
@@ -19,16 +39,81 @@ const Hero = () => {
     mediaQuery.addEventListener("change", handleMediaQueryChange);
 
     // Check if WebGL is supported
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) {
-      setModelFailed(true);
+    const checkWebGL = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) {
+          setWebglSupported(false);
+          setModelFailed(true);
+          return;
+        }
+
+        // Additional mobile WebGL checks
+        if (isMobile) {
+          // Check for common mobile WebGL issues
+          const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+          if (debugInfo) {
+            const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+            console.log('WebGL Renderer:', renderer);
+          }
+
+          // Check if device is low-end
+          const maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+          const maxViewportDims = gl.getParameter(gl.MAX_VIEWPORT_DIMS);
+          
+          if (maxTextureSize < 2048 || maxViewportDims[0] < 1024) {
+            console.log('Low-end device detected, using fallback');
+            setModelFailed(true);
+          }
+        }
+      } catch (error) {
+        console.error('WebGL check failed:', error);
+        setWebglSupported(false);
+        setModelFailed(true);
+      }
+    };
+
+    checkWebGL();
+
+    // Set a timeout for mobile devices to show fallback if 3D doesn't load
+    if (isMobile) {
+      const timeout = setTimeout(() => {
+        console.log('Mobile timeout reached, showing fallback');
+        setModelFailed(true);
+      }, 8000); // 8 seconds timeout for mobile
+
+      return () => {
+        clearTimeout(timeout);
+        mediaQuery.removeEventListener("change", handleMediaQueryChange);
+      };
     }
 
     return () => {
       mediaQuery.removeEventListener("change", handleMediaQueryChange);
     };
-  }, []);
+  }, [isMobile]);
+
+  // Mobile fallback component
+  const MobileFallback = () => (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="text-center max-w-md mx-auto px-4">
+        <div className="w-48 h-48 mx-auto bg-gradient-to-br from-[#915EFF] to-[#804dee] rounded-full flex items-center justify-center mb-6 shadow-2xl">
+          <span className="text-white text-4xl font-bold">BP</span>
+        </div>
+        <h2 className="text-white text-2xl font-bold mb-4">Bharat Parmar</h2>
+        <p className="text-gray-300 text-lg mb-6">Full Stack Developer</p>
+        <div className="flex justify-center space-x-4">
+          <div className="w-3 h-3 bg-[#915EFF] rounded-full animate-pulse"></div>
+          <div className="w-3 h-3 bg-[#915EFF] rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+          <div className="w-3 h-3 bg-[#915EFF] rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+        </div>
+        <p className="text-gray-400 text-sm mt-4">
+          {!webglSupported ? '3D rendering not supported on this device' : 'Loading optimized view...'}
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <section className={`relative w-full h-screen mx-auto`}>
@@ -51,15 +136,8 @@ const Hero = () => {
         </div>
       </div>
 
-      {modelFailed ? (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-64 h-64 mx-auto bg-gradient-to-br from-[#915EFF] to-[#804dee] rounded-full flex items-center justify-center mb-4">
-              <span className="text-white text-6xl font-bold">BP</span>
-            </div>
-            <p className="text-white text-lg">3D Model Loading...</p>
-          </div>
-        </div>
+      {modelFailed || (isMobile && !webglSupported) ? (
+        <MobileFallback />
       ) : (
         <ComputersCanvas />
       )}
