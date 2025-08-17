@@ -13,27 +13,6 @@
   color-scheme: dark;
 }
 
-/* Mobile-specific optimizations */
-@media (max-width: 768px) {
-  * {
-    /* Optimize for mobile rendering */
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  /* Improve image rendering on mobile */
-  img {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-  }
-  
-  /* Optimize canvas rendering */
-  canvas {
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-  }
-}
-
 .hash-span {
   margin-top: -100px;
   padding-bottom: 100px;

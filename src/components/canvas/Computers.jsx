@@ -8,26 +8,20 @@ const Computers = ({ isMobile }) => {
   const [modelLoaded, setModelLoaded] = useState(false);
   const [modelError, setModelError] = useState(false);
   
-  // Use useGLTF hook properly without conditional calls
   const computer = useGLTF("./desktop_pc/scene.gltf");
 
   useEffect(() => {
-    if (computer && computer.scene) {
+    if (computer) {
       setModelLoaded(true);
-      setModelError(false);
-    } else {
-      setModelError(true);
     }
   }, [computer]);
 
-  // Error handling for model loading - show a simple colored box
-  if (modelError || !modelLoaded) {
+  // Error handling for model loading
+  if (modelError) {
     return (
       <mesh>
-        <boxGeometry args={[2, 1, 1]} />
+        <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#915EFF" />
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
       </mesh>
     );
   }
@@ -44,14 +38,12 @@ const Computers = ({ isMobile }) => {
         shadow-mapSize={isMobile ? 512 : 1024}
       />
       <pointLight intensity={1} />
-      {computer && computer.scene && (
-        <primitive
-          object={computer.scene}
-          scale={isMobile ? 0.7 : 0.75}
-          position={isMobile ? [0, -3, -2.2] : [0, -3.25, -1.5]}
-          rotation={[-0.01, -0.2, -0.1]}
-        />
-      )}
+      <primitive
+        object={computer.scene}
+        scale={isMobile ? 0.7 : 0.75}
+        position={isMobile ? [0, -3, -2.2] : [0, -3.25, -1.5]}
+        rotation={[-0.01, -0.2, -0.1]}
+      />
     </mesh>
   );
 };
@@ -59,6 +51,8 @@ const Computers = ({ isMobile }) => {
 const ComputersCanvas = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadAttempts, setLoadAttempts] = useState(0);
+  const maxLoadAttempts = 3;
 
   useEffect(() => {
     // Add a listener for changes to the screen size
@@ -80,6 +74,25 @@ const ComputersCanvas = () => {
       mediaQuery.removeEventListener("change", handleMediaQueryChange);
     };
   }, []);
+
+  // Preload the model with retry logic
+  useEffect(() => {
+    const preloadModel = async () => {
+      try {
+        await useGLTF.preload("./desktop_pc/scene.gltf");
+      } catch (error) {
+        console.warn("Failed to preload 3D model:", error);
+        if (loadAttempts < maxLoadAttempts) {
+          setTimeout(() => {
+            setLoadAttempts(prev => prev + 1);
+            preloadModel();
+          }, 2000);
+        }
+      }
+    };
+
+    preloadModel();
+  }, [loadAttempts]);
 
   return (
     <Canvas
