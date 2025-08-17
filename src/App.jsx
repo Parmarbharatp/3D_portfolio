@@ -16,6 +16,48 @@ const App = () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
 
+    // Register service worker for better caching
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker registered successfully:', registration);
+        })
+        .catch((error) => {
+          console.warn('Service Worker registration failed:', error);
+        });
+    }
+
+    // Preload critical assets for mobile
+    if (isMobile) {
+      const preloadCriticalAssets = async () => {
+        try {
+          // Preload tech images that commonly fail on mobile
+          const techImages = [
+            '/src/assets/tech/html.png',
+            '/src/assets/tech/css.png',
+            '/src/assets/tech/javascript.png',
+            '/src/assets/tech/typescript.png'
+          ];
+
+          const preloadPromises = techImages.map((src) => {
+            return new Promise((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve(src);
+              img.onerror = () => resolve(src); // Continue even if some fail
+              img.src = src;
+            });
+          });
+
+          await Promise.all(preloadPromises);
+          console.log('Critical tech images preloaded for mobile');
+        } catch (error) {
+          console.warn('Some critical assets failed to preload:', error);
+        }
+      };
+
+      preloadCriticalAssets();
+    }
+
     // Simulate loading time for better UX
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -25,7 +67,7 @@ const App = () => {
       window.removeEventListener('resize', checkMobile);
       clearTimeout(timer);
     };
-  }, []);
+  }, [isMobile]);
 
   if (isLoading) {
     return (
