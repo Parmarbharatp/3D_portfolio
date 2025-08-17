@@ -8,7 +8,18 @@ const Computers = ({ isMobile }) => {
   const [modelLoaded, setModelLoaded] = useState(false);
   const [modelError, setModelError] = useState(false);
   
-  const computer = useGLTF("./desktop_pc/scene.gltf");
+  let computer = null;
+  try {
+    computer = useGLTF("./desktop_pc/scene.gltf");
+    if (computer) {
+      setModelLoaded(true);
+      setModelError(false);
+    }
+  } catch (error) {
+    console.warn("Failed to load 3D model:", error);
+    setModelError(true);
+    setModelLoaded(false);
+  }
 
   useEffect(() => {
     if (computer) {
@@ -16,12 +27,14 @@ const Computers = ({ isMobile }) => {
     }
   }, [computer]);
 
-  // Error handling for model loading
-  if (modelError) {
+  // Error handling for model loading - show a simple colored box
+  if (modelError || !modelLoaded) {
     return (
       <mesh>
-        <boxGeometry args={[1, 1, 1]} />
+        <boxGeometry args={[2, 1, 1]} />
         <meshStandardMaterial color="#915EFF" />
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[10, 10, 5]} intensity={1} />
       </mesh>
     );
   }
@@ -38,12 +51,14 @@ const Computers = ({ isMobile }) => {
         shadow-mapSize={isMobile ? 512 : 1024}
       />
       <pointLight intensity={1} />
-      <primitive
-        object={computer.scene}
-        scale={isMobile ? 0.7 : 0.75}
-        position={isMobile ? [0, -3, -2.2] : [0, -3.25, -1.5]}
-        rotation={[-0.01, -0.2, -0.1]}
-      />
+      {computer && computer.scene && (
+        <primitive
+          object={computer.scene}
+          scale={isMobile ? 0.7 : 0.75}
+          position={isMobile ? [0, -3, -2.2] : [0, -3.25, -1.5]}
+          rotation={[-0.01, -0.2, -0.1]}
+        />
+      )}
     </mesh>
   );
 };
