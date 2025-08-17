@@ -6,6 +6,7 @@ import { About, Contact, Experience, Hero, Navbar, Tech, Works, StarsCanvas } fr
 const App = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -27,7 +28,7 @@ const App = () => {
         });
     }
 
-    // Preload critical assets for mobile
+    // Preload critical assets for mobile (non-blocking)
     if (isMobile) {
       const preloadCriticalAssets = async () => {
         try {
@@ -55,19 +56,54 @@ const App = () => {
         }
       };
 
-      preloadCriticalAssets();
+      // Don't block the app loading for preloading
+      preloadCriticalAssets().catch(error => {
+        console.warn('Preloading failed but continuing:', error);
+      });
     }
 
-    // Simulate loading time for better UX
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    // Remove artificial loading delay - show app immediately
+    setIsLoading(false);
 
     return () => {
       window.removeEventListener('resize', checkMobile);
-      clearTimeout(timer);
     };
   }, [isMobile]);
+
+  // Error boundary for the entire app
+  useEffect(() => {
+    const handleError = (error) => {
+      console.error('App error caught:', error);
+      setHasError(true);
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
+    };
+  }, []);
+
+  if (hasError) {
+    return (
+      <div className="w-full h-screen bg-primary flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#915EFF] to-[#804dee] rounded-full flex items-center justify-center mb-4">
+            <span className="text-white text-2xl font-bold">BP</span>
+          </div>
+          <p className="text-white text-lg mb-4">Something went wrong</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-[#915EFF] text-white px-4 py-2 rounded-lg hover:bg-[#804dee]"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
