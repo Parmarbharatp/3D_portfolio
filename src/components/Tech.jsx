@@ -7,6 +7,7 @@ import { technologies } from "../constants";
 const Tech = () => {
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
 
   useEffect(() => {
     // Check if device is mobile
@@ -17,6 +18,13 @@ const Tech = () => {
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
+
+    // Check if WebGL is supported
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      setUseFallback(true);
+    }
 
     // Preload tech images for better mobile performance
     const preloadImages = async () => {
@@ -42,6 +50,24 @@ const Tech = () => {
 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Fallback to regular images if 3D fails or on mobile
+  if (useFallback || isMobile) {
+    return (
+      <div className='flex flex-row flex-wrap justify-center gap-10'>
+        {technologies.map((technology) => (
+          <div className='w-28 h-28 flex flex-col items-center' key={technology.name}>
+            <img 
+              src={technology.icon} 
+              alt={technology.name}
+              className='w-20 h-20 object-contain bg-white rounded-lg p-2'
+            />
+            <p className='text-white text-xs mt-2 text-center'>{technology.name}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className='flex flex-row flex-wrap justify-center gap-10'>

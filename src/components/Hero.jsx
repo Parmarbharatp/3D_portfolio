@@ -7,6 +7,7 @@ import { ComputersCanvas } from "./canvas";
 const Hero = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [modelFailed, setModelFailed] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 500px)");
@@ -23,10 +24,17 @@ const Hero = () => {
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) {
       setModelFailed(true);
+      setShowFallback(true);
     }
+
+    // Set a timeout to show fallback if 3D model takes too long
+    const timeout = setTimeout(() => {
+      setShowFallback(true);
+    }, 3000);
 
     return () => {
       mediaQuery.removeEventListener("change", handleMediaQueryChange);
+      clearTimeout(timeout);
     };
   }, []);
 
@@ -51,13 +59,13 @@ const Hero = () => {
         </div>
       </div>
 
-      {modelFailed ? (
+      {showFallback ? (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <div className="w-64 h-64 mx-auto bg-gradient-to-br from-[#915EFF] to-[#804dee] rounded-full flex items-center justify-center mb-4">
               <span className="text-white text-6xl font-bold">BP</span>
             </div>
-            <p className="text-white text-lg">3D Model Loading...</p>
+            <p className="text-white text-lg">Welcome to my Portfolio</p>
           </div>
         </div>
       ) : (

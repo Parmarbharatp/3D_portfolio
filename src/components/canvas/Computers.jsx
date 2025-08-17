@@ -8,22 +8,15 @@ const Computers = ({ isMobile }) => {
   const [modelLoaded, setModelLoaded] = useState(false);
   const [modelError, setModelError] = useState(false);
   
-  let computer = null;
-  try {
-    computer = useGLTF("./desktop_pc/scene.gltf");
-    if (computer) {
-      setModelLoaded(true);
-      setModelError(false);
-    }
-  } catch (error) {
-    console.warn("Failed to load 3D model:", error);
-    setModelError(true);
-    setModelLoaded(false);
-  }
+  // Use useGLTF hook properly without conditional calls
+  const computer = useGLTF("./desktop_pc/scene.gltf");
 
   useEffect(() => {
-    if (computer) {
+    if (computer && computer.scene) {
       setModelLoaded(true);
+      setModelError(false);
+    } else {
+      setModelError(true);
     }
   }, [computer]);
 
@@ -66,8 +59,6 @@ const Computers = ({ isMobile }) => {
 const ComputersCanvas = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadAttempts, setLoadAttempts] = useState(0);
-  const maxLoadAttempts = 3;
 
   useEffect(() => {
     // Add a listener for changes to the screen size
@@ -89,25 +80,6 @@ const ComputersCanvas = () => {
       mediaQuery.removeEventListener("change", handleMediaQueryChange);
     };
   }, []);
-
-  // Preload the model with retry logic
-  useEffect(() => {
-    const preloadModel = async () => {
-      try {
-        await useGLTF.preload("./desktop_pc/scene.gltf");
-      } catch (error) {
-        console.warn("Failed to preload 3D model:", error);
-        if (loadAttempts < maxLoadAttempts) {
-          setTimeout(() => {
-            setLoadAttempts(prev => prev + 1);
-            preloadModel();
-          }, 2000);
-        }
-      }
-    };
-
-    preloadModel();
-  }, [loadAttempts]);
 
   return (
     <Canvas

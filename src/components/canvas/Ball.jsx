@@ -13,14 +13,8 @@ import CanvasLoader from "../Loader";
 const Ball = (props) => {
   const [isMobile, setIsMobile] = useState(false);
   
-  // Use the original useTexture approach but with error handling
-  let decal = null;
-  try {
-    [decal] = useTexture([props.imgUrl]);
-  } catch (error) {
-    console.warn("Failed to load texture:", error);
-    decal = null;
-  }
+  // Use useTexture hook properly without conditional calls
+  const [decal] = useTexture([props.imgUrl]);
 
   useEffect(() => {
     // Check if device is mobile
@@ -47,15 +41,13 @@ const Ball = (props) => {
           polygonOffsetFactor={-5}
           flatShading
         />
-        {decal && (
-          <Decal
-            position={[0, 0, 1]}
-            rotation={[2 * Math.PI, 0, 6.25]}
-            scale={1}
-            map={decal}
-            flatShading
-          />
-        )}
+        <Decal
+          position={[0, 0, 1]}
+          rotation={[2 * Math.PI, 0, 6.25]}
+          scale={1}
+          map={decal}
+          flatShading
+        />
       </mesh>
     </Float>
   );
