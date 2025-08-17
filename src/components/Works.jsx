@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Tilt from "react-parallax-tilt";
 import { motion } from "framer-motion";
 
@@ -17,6 +17,18 @@ const ProjectCard = ({
   source_code_link,
   live_demo_link,
 }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoaded(true);
+  };
+
   return (
     <motion.div variants={fadeIn("up", "spring", index * 0.5, 0.75)}>
       <Tilt
@@ -27,12 +39,34 @@ const ProjectCard = ({
         className='bg-tertiary p-5 rounded-2xl sm:w-[360px] w-full'
       >
         <div className='relative w-full h-[230px]'>
-          <img
-            src={image}
-            alt='project_image'
-            className='w-full h-full object-cover rounded-2xl cursor-pointer'
-            onClick={() => live_demo_link && window.open(live_demo_link, "_blank")}
-          />
+          {!imageLoaded && (
+            <div className="w-full h-full bg-gray-700 rounded-2xl flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#915EFF]"></div>
+            </div>
+          )}
+          
+          {imageError ? (
+            <div className="w-full h-full bg-gray-700 rounded-2xl flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto bg-[#915EFF] rounded-full flex items-center justify-center mb-2">
+                  <span className="text-white text-xl font-bold">BP</span>
+                </div>
+                <p className="text-white text-sm">Image not available</p>
+              </div>
+            </div>
+          ) : (
+            <img
+              src={image}
+              alt='project_image'
+              className={`w-full h-full object-cover rounded-2xl cursor-pointer transition-opacity duration-300 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onClick={() => live_demo_link && window.open(live_demo_link, "_blank")}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              loading="lazy"
+            />
+          )}
 
           <div className='absolute inset-0 flex justify-end m-3 card-img_hover gap-2'>
             {live_demo_link && (

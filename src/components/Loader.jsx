@@ -24,6 +24,19 @@ const CanvasLoader = () => {
       >
         {progress.toFixed(2)}%
       </p>
+      <p
+        style={{
+          fontSize: 12,
+          color: "#888",
+          marginTop: 10,
+          textAlign: "center",
+          maxWidth: "200px",
+        }}
+      >
+        Loading 3D Model...
+        <br />
+        This may take a moment on mobile devices
+      </p>
     </Html>
   );
 };

@@ -5,7 +5,26 @@ import { OrbitControls, Preload, useGLTF } from "@react-three/drei";
 import CanvasLoader from "../Loader";
 
 const Computers = ({ isMobile }) => {
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [modelError, setModelError] = useState(false);
+  
   const computer = useGLTF("./desktop_pc/scene.gltf");
+
+  useEffect(() => {
+    if (computer) {
+      setModelLoaded(true);
+    }
+  }, [computer]);
+
+  // Error handling for model loading
+  if (modelError) {
+    return (
+      <mesh>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#915EFF" />
+      </mesh>
+    );
+  }
 
   return (
     <mesh>
@@ -16,7 +35,7 @@ const Computers = ({ isMobile }) => {
         penumbra={1}
         intensity={1}
         castShadow
-        shadow-mapSize={1024}
+        shadow-mapSize={isMobile ? 512 : 1024}
       />
       <pointLight intensity={1} />
       <primitive
@@ -31,6 +50,9 @@ const Computers = ({ isMobile }) => {
 
 const ComputersCanvas = () => {
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadAttempts, setLoadAttempts] = useState(0);
+  const maxLoadAttempts = 3;
 
   useEffect(() => {
     // Add a listener for changes to the screen size
@@ -53,19 +75,48 @@ const ComputersCanvas = () => {
     };
   }, []);
 
+  // Preload the model with retry logic
+  useEffect(() => {
+    const preloadModel = async () => {
+      try {
+        await useGLTF.preload("./desktop_pc/scene.gltf");
+      } catch (error) {
+        console.warn("Failed to preload 3D model:", error);
+        if (loadAttempts < maxLoadAttempts) {
+          setTimeout(() => {
+            setLoadAttempts(prev => prev + 1);
+            preloadModel();
+          }, 2000);
+        }
+      }
+    };
+
+    preloadModel();
+  }, [loadAttempts]);
+
   return (
     <Canvas
       frameloop='demand'
       shadows
-      dpr={[1, 2]}
+      dpr={isMobile ? [1, 1.5] : [1, 2]}
       camera={{ position: [20, 3, 5], fov: 25 }}
-      gl={{ preserveDrawingBuffer: true }}
+      gl={{ 
+        preserveDrawingBuffer: true,
+        powerPreference: "high-performance",
+        antialias: !isMobile,
+        alpha: false,
+        failIfMajorPerformanceCaveat: false
+      }}
+      onCreated={() => setIsLoading(false)}
     >
       <Suspense fallback={<CanvasLoader />}>
         <OrbitControls
           enableZoom={false}
           maxPolarAngle={Math.PI / 2}
           minPolarAngle={Math.PI / 2}
+          enablePan={!isMobile}
+          enableDamping={true}
+          dampingFactor={0.05}
         />
         <Computers isMobile={isMobile} />
       </Suspense>

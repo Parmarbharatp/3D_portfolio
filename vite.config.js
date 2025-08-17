@@ -12,5 +12,23 @@ export default defineConfig({
   define: {
     __VUE_OPTIONS_API__: true,
     __VUE_PROD_DEVTOOLS__: false,
-  }
+  },
+  // Build optimizations
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          three: ['@react-three/fiber', '@react-three/drei', 'three'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
+  // Asset handling
+  assetsInclude: ['**/*.gltf', '**/*.bin'],
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['@react-three/fiber', '@react-three/drei', 'three'],
+  },
 })
