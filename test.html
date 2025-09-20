@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        .test-box {
+            background-color: #915EFF;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Basic HTML Test</h1>
+    <div class="test-box">
+        <h2>If you can see this purple box, HTML is working!</h2>
+        <p>Current time: <span id="time"></span></p>
+    </div>
+    
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleTimeString();
+        console.log('HTML test page loaded successfully');
+    </script>
+</body>
+</html>

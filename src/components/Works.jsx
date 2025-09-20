@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Tilt from "react-parallax-tilt";
 import { motion } from "framer-motion";
 
@@ -7,6 +7,7 @@ import { github } from "../assets";
 import { SectionWrapper } from "../hoc";
 import { projects } from "../constants";
 import { fadeIn, textVariant } from "../utils/motion";
+import { isMobile, retryWithBackoff, preloadImage } from "../utils/mobileUtils";
 
 const ProjectCard = ({
   index,
@@ -19,45 +20,103 @@ const ProjectCard = ({
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const maxRetries = 3;
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileDevice(isMobile());
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleImageLoad = () => {
     setImageLoaded(true);
+    setImageError(false);
   };
 
-  const handleImageError = () => {
-    setImageError(true);
-    setImageLoaded(true);
+  const handleImageError = async () => {
+    if (retryCount < maxRetries) {
+      try {
+        await retryWithBackoff(
+          () => preloadImage(`${image}?retry=${retryCount + 1}&t=${Date.now()}`),
+          maxRetries - retryCount,
+          1000
+        );
+        setRetryCount(prev => prev + 1);
+        handleImageLoad();
+      } catch (error) {
+        setRetryCount(prev => prev + 1);
+        if (retryCount + 1 >= maxRetries) {
+          setImageError(true);
+          setImageLoaded(true);
+        }
+      }
+    } else {
+      setImageError(true);
+      setImageLoaded(true);
+    }
+  };
+
+  const retryImage = async () => {
+    setRetryCount(0);
+    setImageError(false);
+    setImageLoaded(false);
+    
+    try {
+      await preloadImage(`${image}?retry=${Date.now()}`);
+      handleImageLoad();
+    } catch (error) {
+      handleImageError();
+    }
   };
 
   return (
     <motion.div variants={fadeIn("up", "spring", index * 0.5, 0.75)}>
       <Tilt
-        tiltMaxAngleX={45}
-        tiltMaxAngleY={45}
+        tiltMaxAngleX={isMobileDevice ? 15 : 45}
+        tiltMaxAngleY={isMobileDevice ? 15 : 45}
         scale={1}
         transitionSpeed={450}
         className='bg-tertiary p-5 rounded-2xl sm:w-[360px] w-full'
       >
         <div className='relative w-full h-[230px]'>
-          {!imageLoaded && (
+          {!imageLoaded && !imageError && (
             <div className="w-full h-full bg-gray-700 rounded-2xl flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#915EFF]"></div>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#915EFF] mx-auto mb-2"></div>
+                <p className="text-white text-xs">Loading...</p>
+                {retryCount > 0 && (
+                  <p className="text-gray-400 text-xs mt-1">Retry {retryCount}/{maxRetries}</p>
+                )}
+              </div>
             </div>
           )}
           
           {imageError ? (
             <div className="w-full h-full bg-gray-700 rounded-2xl flex items-center justify-center">
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto bg-[#915EFF] rounded-full flex items-center justify-center mb-2">
-                  <span className="text-white text-xl font-bold">BP</span>
+                <div className="w-16 h-16 mx-auto bg-gray-600 rounded-full flex items-center justify-center mb-2">
+                  <span className="text-white text-xl font-bold">!</span>
                 </div>
-                <p className="text-white text-sm">Image not available</p>
+                <p className="text-white text-sm mb-2">Image not available</p>
+                <button 
+                  onClick={retryImage}
+                  className="text-[#915EFF] text-xs hover:text-white transition-colors px-3 py-1 rounded border border-[#915EFF]"
+                >
+                  Retry
+                </button>
               </div>
             </div>
           ) : (
             <img
               src={image}
-              alt='project_image'
+              alt={`${name} project`}
               className={`w-full h-full object-cover rounded-2xl cursor-pointer transition-opacity duration-300 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
               }`}
@@ -65,6 +124,7 @@ const ProjectCard = ({
               onLoad={handleImageLoad}
               onError={handleImageError}
               loading="lazy"
+              decoding="async"
             />
           )}
 

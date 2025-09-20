@@ -4,28 +4,24 @@ import { OrbitControls, Preload, useGLTF } from "@react-three/drei";
 
 import CanvasLoader from "../Loader";
 
-const Computers = ({ isMobile }) => {
-  const [modelLoaded, setModelLoaded] = useState(false);
-  const [modelError, setModelError] = useState(false);
+const Computers = ({ isMobileDevice, isTablet, isLargeScreen }) => {      
+  const computer = useGLTF("/desktop_pc/scene.gltf");
   
-  const computer = useGLTF("./desktop_pc/scene.gltf");
+  // Optimize scale and position based on screen size
+  const getScale = () => {
+    if (isMobileDevice) return 0.7;
+    if (isTablet) return 1.0;
+    if (isLargeScreen) return 1.4;
+    return 1.2;
+  };
 
-  useEffect(() => {
-    if (computer) {
-      setModelLoaded(true);
-    }
-  }, [computer]);
-
-  // Error handling for model loading
-  if (modelError) {
-    return (
-      <mesh>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#915EFF" />
-      </mesh>
-    );
-  }
-
+  const getPosition = () => {
+    if (isMobileDevice) return [0, -2.5, -1.5];
+    if (isTablet) return [0, -3.0, -1.5];
+    if (isLargeScreen) return [0, -3.5, -1.5];
+    return [0, -3.25, -1.5];
+  };
+  
   return (
     <mesh>
       <hemisphereLight intensity={0.15} groundColor='black' />
@@ -33,15 +29,15 @@ const Computers = ({ isMobile }) => {
         position={[-20, 50, 10]}
         angle={0.12}
         penumbra={1}
-        intensity={1}
+        intensity={isMobileDevice ? 0.5 : 1}
         castShadow
-        shadow-mapSize={isMobile ? 512 : 1024}
+        shadow-mapSize={isMobileDevice ? 128 : 256}
       />
-      <pointLight intensity={1} />
+      <pointLight intensity={isMobileDevice ? 0.5 : 1} />
       <primitive
         object={computer.scene}
-        scale={isMobile ? 0.7 : 0.75}
-        position={isMobile ? [0, -3, -2.2] : [0, -3.25, -1.5]}
+        scale={getScale()}
+        position={getPosition()}
         rotation={[-0.01, -0.2, -0.1]}
       />
     </mesh>
@@ -49,76 +45,73 @@ const Computers = ({ isMobile }) => {
 };
 
 const ComputersCanvas = () => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadAttempts, setLoadAttempts] = useState(0);
-  const maxLoadAttempts = 3;
 
   useEffect(() => {
-    // Add a listener for changes to the screen size
-    const mediaQuery = window.matchMedia("(max-width: 500px)");
-
-    // Set the initial value of the `isMobile` state variable
-    setIsMobile(mediaQuery.matches);
-
-    // Define a callback function to handle changes to the media query
-    const handleMediaQueryChange = (event) => {
-      setIsMobile(event.matches);
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      setIsMobileDevice(width <= 768);
+      setIsTablet(width > 768 && width <= 1024);
+      setIsLargeScreen(width > 1440);
     };
 
-    // Add the callback function as a listener for changes to the media query
-    mediaQuery.addEventListener("change", handleMediaQueryChange);
+    checkDevice();
+    
+    const handleResize = () => {
+      checkDevice();
+    };
 
-    // Remove the listener when the component is unmounted
+    window.addEventListener('resize', handleResize);
+
     return () => {
-      mediaQuery.removeEventListener("change", handleMediaQueryChange);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
-
-  // Preload the model with retry logic
-  useEffect(() => {
-    const preloadModel = async () => {
-      try {
-        await useGLTF.preload("./desktop_pc/scene.gltf");
-      } catch (error) {
-        console.warn("Failed to preload 3D model:", error);
-        if (loadAttempts < maxLoadAttempts) {
-          setTimeout(() => {
-            setLoadAttempts(prev => prev + 1);
-            preloadModel();
-          }, 2000);
-        }
-      }
-    };
-
-    preloadModel();
-  }, [loadAttempts]);
 
   return (
     <Canvas
       frameloop='demand'
-      shadows
-      dpr={isMobile ? [1, 1.5] : [1, 2]}
-      camera={{ position: [20, 3, 5], fov: 25 }}
-      gl={{ 
-        preserveDrawingBuffer: true,
-        powerPreference: "high-performance",
-        antialias: !isMobile,
-        alpha: false,
-        failIfMajorPerformanceCaveat: false
+      shadows={!isMobileDevice}
+      dpr={isMobileDevice ? [1, 1] : [1, 1.2]}
+      camera={{ 
+        position: isMobileDevice ? [20, 3, 5] : [25, 3, 5], 
+        fov: isMobileDevice ? 25 : 20 
       }}
-      onCreated={() => setIsLoading(false)}
+      gl={{ 
+        preserveDrawingBuffer: false,
+        powerPreference: "high-performance",
+        antialias: !isMobileDevice,
+        alpha: false,
+        failIfMajorPerformanceCaveat: false,
+        stencil: false,
+        depth: true
+      }}
+      onCreated={({ gl }) => {
+        gl.setClearColor('#000000', 0);
+        gl.toneMapping = 0;
+        gl.outputEncoding = 3001;
+        setIsLoading(false);
+      }}
     >
       <Suspense fallback={<CanvasLoader />}>
         <OrbitControls
           enableZoom={false}
           maxPolarAngle={Math.PI / 2}
           minPolarAngle={Math.PI / 2}
-          enablePan={!isMobile}
+          enablePan={false}
           enableDamping={true}
           dampingFactor={0.05}
+          autoRotate={!isMobileDevice}
+          autoRotateSpeed={0.5}
         />
-        <Computers isMobile={isMobile} />
+        <Computers 
+          isMobileDevice={isMobileDevice} 
+          isTablet={isTablet} 
+          isLargeScreen={isLargeScreen} 
+        />
       </Suspense>
 
       <Preload all />

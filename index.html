@@ -8,6 +8,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Bharat Parmar - Full Stack Developer Portfolio" />
+    <meta name="keywords" content="developer, portfolio, react, javascript, fullstack" />
     <title>Bharat Parmar | Portfolio</title>
     
     <!-- Preload critical assets -->
@@ -17,6 +19,21 @@
     <!-- DNS prefetch for external resources -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
